@@ -66,18 +66,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         advertisement_data = service_info.advertisement
         return await data.async_poll(connectable_device, advertisement_data)
 
-    coordinator = hass.data.setdefault(DOMAIN, {})[entry.entry_id] = (
-        ActiveBluetoothProcessorCoordinator(
-            hass,
-            _LOGGER,
-            address=address,
-            mode=BluetoothScanningMode.PASSIVE,
-            update_method=data.update,
-            needs_poll_method=_needs_poll,
-            poll_method=_async_poll,
-            connectable=True,
-        )
+    coordinator = ActiveBluetoothProcessorCoordinator(
+        hass,
+        _LOGGER,
+        address=address,
+        mode=BluetoothScanningMode.PASSIVE,
+        update_method=data.update,
+        needs_poll_method=_needs_poll,
+        poll_method=_async_poll,
+        connectable=True,
     )
+    entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(
         coordinator.async_start()
@@ -87,7 +86,4 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
-
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS);
