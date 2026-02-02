@@ -24,7 +24,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.sensor import sensor_device_info_to_hass_device_info
 
-from .const import DOMAIN
 from .device import device_key_to_bluetooth_entity_key
 from .okokscale import OKOKScaleSensor, SensorUpdate
 
@@ -103,7 +102,7 @@ class OKOKScaleBluetoothSensorEntity(
     ],
     SensorEntity,
 ):
-    """Representation of a OKOK Scale sensor."""
+    """Representation of an OKOK Scale sensor."""
 
     @property
     def native_value(self) -> str | int | None:
