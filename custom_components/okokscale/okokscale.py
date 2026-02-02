@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import logging
 
-from bleak import BleakClient, BLEDevice
-from bleak.backends.scanner import AdvertisementData
+from bleak import AdvertisementData, BleakClient, BLEDevice
 from bleak_retry_connector import BleakClientWithServiceCache, establish_connection
 from bluetooth_data_tools import human_readable_name
 from bluetooth_sensor_state_data import BluetoothData
