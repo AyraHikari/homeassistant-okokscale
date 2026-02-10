@@ -308,18 +308,29 @@ class OKOKScaleBluetoothDeviceData(BluetoothData):
                 (data[IDX_V20_WEIGHT_MSB] << 8) + data[IDX_V20_WEIGHT_LSB]
             ) / divider
 
+            if self._is_adv and (data[IDX_V20_FINAL] & 1) == 0 and weight < 2.0:
+                _LOGGER.debug(
+                    "ADV unstable/off-scale reading (weight=%s, flags=0x%02x); skipping",
+                    weight,
+                    data[IDX_V20_FINAL],
+                )
+                return
+
             # Reading the impedance
-            impedance = (data[IDX_V20_IMPEDANCE_MSB] << 8) + data[
-                IDX_V20_IMPEDANCE_LSB
-            ] / 10.0
+            impedance = None
+            if not self._is_adv:
+                impedance = (data[IDX_V20_IMPEDANCE_MSB] << 8) + data[
+                    IDX_V20_IMPEDANCE_LSB
+                ] / 10.0
 
             self.update_sensor(
                 OKOKScaleSensor.WEIGHT, UnitOfMass.KILOGRAMS, weight, None, "Weight"
             )
 
-            self.update_sensor(
-                OKOKScaleSensor.IMPEDANCE, "Ω", impedance, None, "Impedance"
-            )
+            if impedance is not None:
+                self.update_sensor(
+                    OKOKScaleSensor.IMPEDANCE, "Ω", impedance, None, "Impedance"
+                )
         elif MANUFACTURER_DATA_ID_V26 in manufacturer_data:
             data = manufacturer_data[MANUFACTURER_DATA_ID_V26]
             _LOGGER.debug("manufacturer_data: %s", data.hex())
