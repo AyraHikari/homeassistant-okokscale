@@ -82,6 +82,7 @@ class OKOKScaleBluetoothDeviceData(BluetoothData):
     """Data for OKOK Scale sensors."""
 
     name = None
+    _is_adv = False
 
     _device = None
     _client = None
@@ -91,6 +92,7 @@ class OKOKScaleBluetoothDeviceData(BluetoothData):
         """Update from BLE advertisement data."""
         if service_info.name not in ["Chipsea-BLE", "ADV"]:
             return
+        self._is_adv = service_info.name == "ADV"
         if 8394 not in service_info.manufacturer_data:
             _LOGGER.debug(
                 "Manufacturer id 0x20CA (8394) not found for %s; ids=%s",
@@ -275,24 +277,28 @@ class OKOKScaleBluetoothDeviceData(BluetoothData):
                 " ".join(f"{b:02x}" for b in data),
             )
             _LOGGER.debug("v20 flags: final=0x%02x", data[IDX_V20_FINAL])
+            if not self._is_adv:
+                if (data[IDX_V20_FINAL] & 1) == 0:
+                    _LOGGER.debug(
+                        "v20 not final; skipping weight/impedance. "
+                        "If this is your scale, capture a few samples with a known weight."
+                    )
+                    return
 
-            if (data[IDX_V20_FINAL] & 1) == 0:
+                checksum = 0x20  # Version field is part of the checksum, but not in array
+                for i in range(0, IDX_V20_CHECKSUM - 1):
+                    checksum ^= data[i]
+                if data[IDX_V20_CHECKSUM] != checksum:
+                    _LOGGER.error(
+                        "Checksum error, got %s, expected %s",
+                        hex(data[IDX_V20_CHECKSUM] & 0xFF),
+                        hex(checksum & 0xFF),
+                    )
+                    return
+            else:
                 _LOGGER.debug(
-                    "v20 not final; skipping weight/impedance. "
-                    "If this is your scale, capture a few samples with a known weight."
+                    "ADV device: skipping v20 final/checksum gating for weight parsing."
                 )
-                return
-
-            checksum = 0x20  # Version field is part of the checksum, but not in array
-            for i in range(0, IDX_V20_CHECKSUM - 1):
-                checksum ^= data[i]
-            if data[IDX_V20_CHECKSUM] != checksum:
-                _LOGGER.error(
-                    "Checksum error, got %s, expected %s",
-                    hex(data[IDX_V20_CHECKSUM] & 0xFF),
-                    hex(checksum & 0xFF),
-                )
-                return
 
             # Reading the weight
             divider = 10.0
