@@ -270,8 +270,17 @@ class OKOKScaleBluetoothDeviceData(BluetoothData):
             _LOGGER.debug("manufacturer_data: %s", data.hex())
             if data is None or len(data) != 19:
                 return
+            _LOGGER.debug(
+                "v20 bytes: %s",
+                " ".join(f"{b:02x}" for b in data),
+            )
+            _LOGGER.debug("v20 flags: final=0x%02x", data[IDX_V20_FINAL])
 
             if (data[IDX_V20_FINAL] & 1) == 0:
+                _LOGGER.debug(
+                    "v20 not final; skipping weight/impedance. "
+                    "If this is your scale, capture a few samples with a known weight."
+                )
                 return
 
             checksum = 0x20  # Version field is part of the checksum, but not in array
